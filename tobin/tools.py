@@ -27,7 +27,7 @@ def embed_text(text_list) -> torch.Tensor:
 def invert_embedding(embeddings, num_steps=20):
     """Inverts the given embeddings using vec2text"""
     inverted_embeddings = vec2text.invert_embeddings(
-        embeddings=embeddings.to(device), corrector=corrector, num_steps=20, sequence_beam_width=4
+        embeddings=embeddings.to(device), corrector=corrector, num_steps=20, sequence_beam_width=2
     )
     return inverted_embeddings
 
@@ -42,6 +42,15 @@ def get_edges(splits, original_range):
         diff /= 2
         edges = torch.cat([edges, edges - diff])
     return edges.float(), diff
+
+def get_linspace_edges(splits, original_range):
+    #return a tensor containing the rounding edges for the given number of splits using np.linspace
+    edges = np.linspace(original_range[0], original_range[1], num=splits+2)
+    return torch.tensor(edges).float()
+
+def linspace_round(linspace_edges, embeddings):
+    #Rounds the given embeddings to the nearest value in the 'linspace_edges' array
+    return torch.concat([linspace_edges[(linspace_edges - embedding.view(-1,1)).abs().argmin(dim=1)].float().view(1,-1) for embedding in embeddings])
 
 def fakeround(edges, embeddings):
     """
